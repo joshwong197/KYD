@@ -189,7 +189,7 @@ export function PdfViewer({
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <span className="text-xs text-gray-500 w-12 text-center">
+            <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-center">
               {Math.round((scale / baseScaleRef.current) * 100)}%
             </span>
             <Button
@@ -247,8 +247,8 @@ export function PdfViewer({
         <div ref={containerRef} className="flex-1 overflow-auto p-4 bg-gray-100 dark:bg-gray-950">
           {loading && (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-sm text-gray-500">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500 dark:text-blue-400" />
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                 Loading PDF...
               </span>
             </div>
@@ -276,7 +276,7 @@ export function PdfViewer({
             >
               Previous
             </Button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               Page {currentPage} of {pageCount}
             </span>
             <Button

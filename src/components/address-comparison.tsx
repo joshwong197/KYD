@@ -49,7 +49,7 @@ export function AddressComparison({ companies }: AddressComparisonProps) {
   return (
     <div className="p-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
       <div className="flex items-center gap-2 mb-2">
-        <MapPin className="w-3.5 h-3.5 text-gray-500" />
+        <MapPin className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
         <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Address Comparison
         </span>

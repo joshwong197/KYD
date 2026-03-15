@@ -67,7 +67,7 @@ export function SignatureGallery({
                 </Button>
               </div>
               <div
-                className={`bg-white p-2 ${
+                className={`bg-white dark:bg-gray-100 p-2 ${
                   zoomedIndex === idx ? "" : "max-h-48 overflow-hidden"
                 }`}
               >
