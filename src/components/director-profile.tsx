@@ -132,16 +132,16 @@ export function DirectorProfileCard({
         <CardContent className="pt-0 px-4 pb-4">
           <Separator className="mb-4" />
 
-          {/* Signature Comparison */}
-          {extractedSignatures.length >= 2 && (
+          {/* Signature Comparison — always show when at least 1 signature extracted */}
+          {extractedSignatures.length >= 1 && (
             <div className="mb-4 p-3 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
               <div className="flex items-center gap-2 mb-3">
                 <PenTool className="w-3.5 h-3.5 text-blue-500" />
                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  Signature Comparison
+                  Signatures
                 </span>
                 <span className="text-xs text-blue-500 dark:text-blue-400">
-                  {extractedSignatures.length} signatures from active companies
+                  {extractedSignatures.length} from active compan{extractedSignatures.length === 1 ? "y" : "ies"}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -5,7 +5,10 @@ import type { SignatureExtractionResult } from "@/lib/types";
 
 const MAX_CONCURRENT = 3;
 const RENDER_SCALE = 2.0;
-const SIGNATURE_START_RATIO = 0.6; // Bottom 40% of page
+// Signature region: the consent form has the signature in the middle of the page
+// Layout: header/company info (0-35%), signature section (35-63%), disqualification text (63-100%)
+const SIGNATURE_START_RATIO = 0.35;
+const SIGNATURE_END_RATIO = 0.63;
 
 interface ExtractionJob {
   companyNumber: string;
@@ -62,10 +65,11 @@ export function useSignatureExtractor() {
 
       if (abortedRef.current) return;
 
-      // Extract signature region (bottom 40%)
+      // Extract signature region (middle band: ~35-63% of page)
       const sigCanvas = document.createElement("canvas");
       const startY = Math.floor(canvas.height * SIGNATURE_START_RATIO);
-      const height = canvas.height - startY;
+      const endY = Math.floor(canvas.height * SIGNATURE_END_RATIO);
+      const height = endY - startY;
       sigCanvas.width = canvas.width;
       sigCanvas.height = height;
       const sigCtx = sigCanvas.getContext("2d")!;
