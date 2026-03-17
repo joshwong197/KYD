@@ -1,72 +1,59 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { ConsentFormLink } from "@/lib/types";
+import type {
+  ConsentFormLink,
+  BatchConsentFormResponse,
+} from "@/lib/types";
 
-interface ConsentFormState {
+interface BatchConsentState {
   loading: boolean;
   error: string | null;
-  forms: ConsentFormLink[];
+  results: Record<string, ConsentFormLink | null>;
 }
 
 export function useConsentForms() {
-  const [formsByCompany, setFormsByCompany] = useState<
-    Record<string, ConsentFormState>
-  >({});
+  const [consentState, setConsentState] = useState<BatchConsentState>({
+    loading: false,
+    error: null,
+    results: {},
+  });
 
-  const fetchConsentForms = useCallback(
+  const fetchForDirector = useCallback(
     async (
-      companyNumber: string,
       firstName: string,
       lastName: string,
-      appointmentDate?: string
-    ) => {
-      setFormsByCompany((prev) => ({
-        ...prev,
-        [companyNumber]: { loading: true, error: null, forms: [] },
-      }));
+      companies: Array<{ companyNumber: string; status: string }>
+    ): Promise<Record<string, ConsentFormLink | null>> => {
+      setConsentState({ loading: true, error: null, results: {} });
 
       try {
-        const params = new URLSearchParams({
-          firstName,
-          lastName,
+        const res = await fetch("/api/directors/consent-forms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ firstName, lastName, companies }),
         });
-        if (appointmentDate) {
-          params.set("appointmentDate", appointmentDate);
-        }
-
-        const res = await fetch(
-          `/api/companies/${companyNumber}/consent-forms?${params}`
-        );
 
         if (!res.ok) {
           const data = await res.json();
           throw new Error(data.error || "Failed to fetch consent forms");
         }
 
-        const data = await res.json();
-
-        setFormsByCompany((prev) => ({
-          ...prev,
-          [companyNumber]: {
-            loading: false,
-            error: null,
-            forms: data.consentForms || [],
-          },
-        }));
+        const data: BatchConsentFormResponse = await res.json();
+        setConsentState({ loading: false, error: null, results: data.results });
+        return data.results;
       } catch (err) {
-        setFormsByCompany((prev) => ({
-          ...prev,
-          [companyNumber]: {
-            loading: false,
-            error: err instanceof Error ? err.message : "Failed",
-            forms: [],
-          },
-        }));
+        const error = err instanceof Error ? err.message : "Failed";
+        setConsentState({ loading: false, error, results: {} });
+        return {};
       }
     },
     []
   );
 
-  return { formsByCompany, fetchConsentForms };
+  const resetConsent = useCallback(() => {
+    setConsentState({ loading: false, error: null, results: {} });
+  }, []);
+
+  return { consentState, fetchForDirector, resetConsent };
 }

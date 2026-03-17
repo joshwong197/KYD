@@ -185,18 +185,18 @@ export function PdfViewer({
               variant="ghost"
               size="sm"
               onClick={() => setScale((s) => Math.max(baseScaleRef.current * 0.5, s - baseScaleRef.current * 0.25))}
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 text-gray-700 dark:text-gray-200"
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <span className="text-xs text-gray-500 w-12 text-center">
+            <span className="text-xs text-gray-500 dark:text-gray-300 w-12 text-center">
               {Math.round((scale / baseScaleRef.current) * 100)}%
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setScale((s) => Math.min(baseScaleRef.current * 3, s + baseScaleRef.current * 0.25))}
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 text-gray-700 dark:text-gray-200"
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
@@ -204,7 +204,7 @@ export function PdfViewer({
               variant="ghost"
               size="sm"
               onClick={handleAutoZoom}
-              className="h-7 px-2 text-xs"
+              className="h-7 px-2 text-xs text-gray-700 dark:text-gray-200"
               title={
                 autoZoomed
                   ? "Show full page"
@@ -225,7 +225,7 @@ export function PdfViewer({
                 variant="ghost"
                 size="sm"
                 onClick={extractSignature}
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-xs text-gray-700 dark:text-gray-200"
                 title="Extract signature region"
               >
                 <Download className="w-4 h-4" />
@@ -236,7 +236,7 @@ export function PdfViewer({
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 text-gray-700 dark:text-gray-200"
             >
               <X className="w-4 h-4" />
             </Button>

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findConsentFormForDirector } from "@/lib/scraper/directors-page";
-import { matchConsentFormByDate } from "@/lib/scraper/documents-page";
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +9,6 @@ export async function GET(
   const { searchParams } = request.nextUrl;
   const firstName = searchParams.get("firstName") || "";
   const lastName = searchParams.get("lastName") || "";
-  const appointmentDate = searchParams.get("appointmentDate") || "";
 
   if (!lastName) {
     return NextResponse.json(
@@ -20,7 +18,7 @@ export async function GET(
   }
 
   try {
-    // Step 1: Try to get direct consent form link from directors page
+    // Only use direct consent form links (high confidence)
     const directLink = await findConsentFormForDirector(
       companyNumber,
       firstName,
@@ -31,19 +29,6 @@ export async function GET(
       return NextResponse.json({ consentForms: [directLink] });
     }
 
-    // Step 2: Fall back to documents page date-based matching
-    if (appointmentDate) {
-      const matched = await matchConsentFormByDate(
-        companyNumber,
-        appointmentDate
-      );
-
-      if (matched.length > 0) {
-        return NextResponse.json({ consentForms: matched });
-      }
-    }
-
-    // Step 3: No consent forms found
     return NextResponse.json({
       consentForms: [],
       message: "No consent forms found for this director",

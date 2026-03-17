@@ -37,17 +37,17 @@ function parseDirectorsPage(html: string): ScrapedDirector[] {
   // Each block contains: "Full legal name: ...", "Residential Address: ...",
   // "Appointment Date: ...", and a consent link (<a> tag)
   //
-  // Strategy: get full page text, split by "Full legal name:", then for each
-  // block find the nearest <a> link in the HTML that corresponds to it.
+  // IMPORTANT: The name is split across TWO lines:
+  //   Full legal name: Christopher  Linwood
+  //   PARKER
+  // So we need to combine the first two non-empty lines as the full name.
 
-  // First, collect all consent-related links with their position in the HTML
+  // First, collect all consent-related links in order
   const consentLinks: {
     docId: string | null;
     type: "direct" | "documents-page";
-    htmlIndex: number;
+    url: string;
   }[] = [];
-
-  const htmlStr = $.html() || "";
 
   // Find all "View Consent Form" / "Link to Consent Form" links
   $("a").each((_, el) => {
@@ -56,22 +56,20 @@ function parseDirectorsPage(html: string): ScrapedDirector[] {
 
     if (!text.includes("consent")) return;
 
-    const htmlPos = htmlStr.indexOf(href.substring(0, 30));
-
     if (href.includes("/service/services/documents/")) {
-      // Direct document link (current directors)
+      // Direct document link (current directors) — "View Consent Form"
       const match = href.match(/documents\/([A-F0-9]+)/i);
       consentLinks.push({
         docId: match ? match[1] : null,
         type: "direct",
-        htmlIndex: htmlPos,
+        url: href,
       });
     } else if (href.includes("javascript:") && href.includes("documents")) {
-      // JS redirect to documents page (former directors)
+      // JS redirect to documents page (former directors) — "Link to Consent Form"
       consentLinks.push({
         docId: null,
         type: "documents-page",
-        htmlIndex: htmlPos,
+        url: href,
       });
     }
   });
@@ -82,10 +80,28 @@ function parseDirectorsPage(html: string): ScrapedDirector[] {
 
   for (let i = 1; i < blocks.length; i++) {
     const block = blocks[i];
-    const lines = block.split(/\n/).map((l) => l.trim()).filter(Boolean);
+    const lines = block
+      .split(/\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
 
-    // Name is the first non-empty content
-    const name = lines[0] || "";
+    // Name is spread across first two lines: "FirstName MiddleName" + "SURNAME"
+    // Combine them, stopping before "Residential Address:" or other field labels
+    let nameParts: string[] = [];
+    for (const line of lines) {
+      if (
+        /^(Residential\s+Address|Appointment\s+Date|Shareholder|Ceased\s+date|View\s+Consent|Link\s+to)/i.test(
+          line
+        )
+      ) {
+        break;
+      }
+      nameParts.push(line);
+      // Surname is typically ALL CAPS on its own line — if we found it, stop
+      if (nameParts.length >= 2) break;
+    }
+
+    const name = nameParts.join(" ").replace(/\s+/g, " ").trim();
     if (!name) continue;
 
     // Extract fields from the text block
@@ -114,7 +130,6 @@ function parseDirectorsPage(html: string): ScrapedDirector[] {
           matchConfidence: "high",
         };
       }
-      // For "documents-page" type, consentLink stays null → will fall through to documents page matching
     }
 
     directors.push({
@@ -141,18 +156,18 @@ export async function findConsentFormForDirector(
   const lastNameUpper = directorLastName.toUpperCase();
   const firstNameUpper = directorFirstName.toUpperCase();
 
-  // Try exact first+last match
+  // Try exact first+last match — only return direct links (high confidence)
   for (const dir of directors) {
     const dirUpper = dir.name.toUpperCase();
     if (dirUpper.includes(firstNameUpper) && dirUpper.includes(lastNameUpper)) {
-      if (dir.consentLink) return dir.consentLink;
+      if (dir.consentLink?.type === "direct") return dir.consentLink;
     }
   }
 
-  // Try last name only match
+  // Try last name only match — only return direct links (high confidence)
   for (const dir of directors) {
     if (dir.name.toUpperCase().includes(lastNameUpper)) {
-      if (dir.consentLink) return dir.consentLink;
+      if (dir.consentLink?.type === "direct") return dir.consentLink;
     }
   }
 

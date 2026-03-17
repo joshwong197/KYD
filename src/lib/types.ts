@@ -78,3 +78,27 @@ export interface ExtractedSignature {
   imageDataUrl: string;
   pdfPageNumber: number;
 }
+
+// Batch consent form API
+export interface BatchConsentFormRequest {
+  firstName: string;
+  lastName: string;
+  companies: Array<{
+    companyNumber: string;
+    status: string;
+  }>;
+}
+
+export interface BatchConsentFormResponse {
+  results: Record<string, ConsentFormLink | null>;
+}
+
+// Client-side signature extraction
+export interface SignatureExtractionResult {
+  companyNumber: string;
+  companyName: string;
+  pdfUrl: string | null;
+  imageDataUrl: string | null;
+  loading: boolean;
+  error: string | null;
+}

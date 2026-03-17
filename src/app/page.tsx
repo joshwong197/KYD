@@ -1,39 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Shield } from "lucide-react";
 import { Header } from "@/components/header";
 import { DirectorSearch } from "@/components/director-search";
 import { DirectorProfileCard } from "@/components/director-profile";
 import { PdfViewer } from "@/components/pdf-viewer";
-import { SignatureGallery } from "@/components/signature-gallery";
 import { useDirectorSearch } from "@/hooks/use-director-search";
 import { useConsentForms } from "@/hooks/use-consent-forms";
-
-interface SignatureEntry {
-  companyName: string;
-  imageDataUrl: string;
-}
+import { useSignatureExtractor } from "@/hooks/use-signature-extractor";
 
 export default function Home() {
   const { results, totalResults, loading, error, search } =
     useDirectorSearch();
-  const { formsByCompany, fetchConsentForms } = useConsentForms();
+  const { consentState, fetchForDirector, resetConsent } = useConsentForms();
+  const { results: signatureResults, extractBatch, clearResults } =
+    useSignatureExtractor();
   const [pdfView, setPdfView] = useState<{
     url: string;
     companyName: string;
   } | null>(null);
-  const [signatures, setSignatures] = useState<SignatureEntry[]>([]);
+
+  // Track which results we've already fetched consent forms for
+  const fetchedRef = useRef<string>("");
+
+  // Auto-fetch consent forms and extract signatures when results change
+  useEffect(() => {
+    if (results.length === 0) {
+      clearResults();
+      resetConsent();
+      return;
+    }
+
+    // Build a key to prevent re-fetching for the same results
+    const resultKey = results
+      .map((p) => `${p.firstName}-${p.lastName}`)
+      .join("|");
+    if (fetchedRef.current === resultKey) return;
+    fetchedRef.current = resultKey;
+
+    // Clear previous extractions
+    clearResults();
+
+    const fetchAll = async () => {
+      for (const profile of results) {
+        const activeCompanies = profile.companies
+          .filter((c) => c.status === "active")
+          .map((c) => ({
+            companyNumber: c.companyNumber,
+            status: c.status,
+          }));
+
+        if (activeCompanies.length === 0) continue;
+
+        const consentResults = await fetchForDirector(
+          profile.firstName,
+          profile.lastName,
+          activeCompanies
+        );
+
+        // Build extraction jobs from the consent form results
+        const jobs = Object.entries(consentResults)
+          .filter(
+            (entry): entry is [string, NonNullable<(typeof entry)[1]>] =>
+              entry[1] !== null
+          )
+          .map(([companyNumber, link]) => ({
+            companyNumber,
+            companyName:
+              profile.companies.find(
+                (c) => c.companyNumber === companyNumber
+              )?.companyName || "",
+            pdfUrl: link.url,
+          }));
+
+        if (jobs.length > 0) {
+          extractBatch(jobs);
+        }
+      }
+    };
+
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
 
   const handleViewPdf = (url: string, companyName: string) => {
     setPdfView({ url, companyName });
-  };
-
-  const handleSignatureExtracted = (
-    dataUrl: string,
-    companyName: string
-  ) => {
-    setSignatures((prev) => [...prev, { companyName, imageDataUrl: dataUrl }]);
   };
 
   return (
@@ -61,16 +113,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Signature Gallery */}
-          {signatures.length > 0 && (
-            <div className="mb-6">
-              <SignatureGallery
-                signatures={signatures}
-                onClear={() => setSignatures([])}
-              />
-            </div>
-          )}
-
           {/* Results */}
           {results.length > 0 ? (
             <div className="space-y-3">
@@ -78,8 +120,8 @@ export default function Home() {
                 <DirectorProfileCard
                   key={`${profile.firstName}-${profile.lastName}`}
                   profile={profile}
-                  formsByCompany={formsByCompany}
-                  onFetchConsentForms={fetchConsentForms}
+                  signatureResults={signatureResults}
+                  consentLoading={consentState.loading}
                   onViewPdf={handleViewPdf}
                 />
               ))}
@@ -90,13 +132,12 @@ export default function Home() {
         </div>
       </main>
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal — optional detail view */}
       {pdfView && (
         <PdfViewer
           url={pdfView.url}
           companyName={pdfView.companyName}
           onClose={() => setPdfView(null)}
-          onSignatureExtracted={handleSignatureExtracted}
         />
       )}
     </div>
