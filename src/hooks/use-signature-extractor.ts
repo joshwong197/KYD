@@ -5,10 +5,11 @@ import type { SignatureExtractionResult } from "@/lib/types";
 
 const MAX_CONCURRENT = 3;
 const RENDER_SCALE = 2.0;
-// Signature region: the consent form has the signature in the middle of the page
-// Layout: header/company info (0-35%), signature section (35-63%), disqualification text (63-100%)
-const SIGNATURE_START_RATIO = 0.35;
-const SIGNATURE_END_RATIO = 0.63;
+// Signature region: focused on the consent/signature area of the form
+// Layout: header+company (0-25%), director details+address (25-44%),
+//         consent+signature+date (44-64%), disqualification text (64-100%)
+const SIGNATURE_START_RATIO = 0.44;
+const SIGNATURE_END_RATIO = 0.66;
 
 interface ExtractionJob {
   companyNumber: string;
